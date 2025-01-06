@@ -35,13 +35,13 @@ SP sp_inst_0 (
     .DI({gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,din[7:0]})
 );
 
-defparam sp_inst_0.READ_MODE = 1'b0;
-defparam sp_inst_0.WRITE_MODE = 2'b00;
+
+defparam sp_inst_0.READ_MODE = 1'b0; // 0 bypass read
+defparam sp_inst_0.WRITE_MODE = 2'b10; // 0 normal 01 write-through 10 read-before-write
 defparam sp_inst_0.BIT_WIDTH = 8;
 defparam sp_inst_0.BLK_SEL = 3'b000;
 defparam sp_inst_0.RESET_MODE = "SYNC";
 
-defparam bram_sp_0.INIT_RAM_00 =
-128'h000102030405060708090a0b0c0d0e0f;
+
 
 endmodule //Gowin_SP

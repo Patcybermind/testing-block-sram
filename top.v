@@ -33,7 +33,7 @@ reg ce = 1;
 reg oce = 1;
 reg [3:0] ad;
 reg bramWre;
-reg bramReset; // NOT SURE WHAT IT SHOULD BE BY DEFAULT
+reg bramReset; // TRY RESETTING IT BEFORE READING NEXT TIME
 reg [7:0] bramDin;
 reg [3:0] bramAddress;
 
@@ -51,7 +51,7 @@ Gowin_SP your_instance_name(
 );
 
 wire [7:0] receivedData;
-reg [7:0] dataOut;
+reg [7:0] uartDataOut;
 reg sendOnLow;
 
 uart usb(
@@ -59,7 +59,7 @@ uart usb(
     .uart_rx(uart_rx),
     .uart_tx(uart_tx),
     //.led(led), 
-    .dataOut(dataOut),
+    .dataOut(uartDataOut),
     .receivedData(receivedData),
     .sendOnLow(sendOnLow)
 );
@@ -83,23 +83,60 @@ end
 localparam UART_INTERVAL_SEND = 27000000/1; // 1 second
 reg [31:0] txIntervalCounter = 0;
 
-// UART
+reg [7:0] writeCounter = 0;
+
+// WRITE TO RAM
+localparam TIME_BEFORE_RAM_WRITE = 27000000/5;
+reg [31:0] timeBeforeRamWriteTimer = 0;
 always @(posedge clk) begin
+    if (timeBeforeRamWriteTimer == TIME_BEFORE_RAM_WRITE) begin
+        // WRITE
+        bramDin <= uartDataOut;
+        bramWre <= 1;
+        
+
+        // write loop
+        if (writeCounter == 16) begin
+            timeBeforeRamWriteTimer <= timeBeforeRamWriteTimer + 1;
+            // but we also need to write this one to ram
+        end else begin
+            bramDin <= writeCounter;
+            bramAddress <= writeCounter;
+            writeCounter <= writeCounter + 1'b1;
+        end
+
+    end else if (timeBeforeRamWriteTimer == TIME_BEFORE_RAM_WRITE + 1) begin
+        // do nothing this should only run once
+        // IF I ADD STUFF REMEMBER THIS
+        bramWre <= 0;
+    end else begin
+        timeBeforeRamWriteTimer <= timeBeforeRamWriteTimer + 1;
+    
+    end
+
+    // first stage of read
     if (txIntervalCounter == UART_INTERVAL_SEND) begin
         bramAddress <= receivedData;
-        txIntervalCounter <= txIntervalCounter + 1;
-        bramWre <= 0;
-        bramReset <= 0;
+        
+        
+        
         oce <= 1;
         ce <= 1;
-        
-    end else if (txIntervalCounter == UART_INTERVAL_SEND + 1) begin
         txIntervalCounter <= 0;
-        sendOnLow <= 0;
-        dataOut <= bramDout;
-        
+
     end else begin
         txIntervalCounter <= txIntervalCounter + 1;
+        
+    end
+end
+
+// NEGEDGE
+always @(negedge clk) begin
+    if (txIntervalCounter == UART_INTERVAL_SEND) begin
+        
+        uartDataOut <= bramDout;
+        sendOnLow <= 0;
+    end else begin
         sendOnLow <= 1;
     end
 end
